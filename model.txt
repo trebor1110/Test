@@ -1,0 +1,163 @@
+using DataContracts;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using WorkflowWeb.Models.PreScreen;
+
+namespace WorkflowWeb.Models
+{
+    [Serializable]
+    public class SubmissionEdit
+    {
+        public SubmissionEdit()
+        {
+            Documents = new List<DocumentDTO>();
+            VettingInfo = new List<VettingInfoDTO>();
+            History = new List<HistoryDTO>();
+            WorkflowHistory = new List<WorkFlowHistoryDTO>();
+            WorkflowNotifications = new List<WorkFlowNotificationsDTO>();
+            WorkflowItems = new List<WorkFlowItemsDTO>();
+            ChecklistItems = new List<ChecklistDTO>();
+            CompletedChecklistItems = new List<ChecklistHistoryDTO>();
+        }
+
+        public CaseDTO CaseDTO { get; set; }
+        public SciRequisitionDTO SciRequisitionDTO { get; set; }
+        public PreScreenDTO PreScreenDTO { get; set; }
+        public List<PreScreenDTO> MultiPreScreenDTO { get; set; }
+        public List<DocumentDTO> Documents { get; set; }
+        public PreScreenViewModel PreScreen { get; set; }
+        public List<VettingInfoDTO> VettingInfo { get; set; }
+        public List<HistoryDTO> History { get; set; }
+        public PSEFDTO PSEF { get; set; }
+        public List<WorkFlowHistoryDTO> WorkflowHistory { get; set; }
+        public List<WorkFlowItemsDTO> WorkflowItems { get; set; }
+        public List<WorkFlowNotificationsDTO> WorkflowNotifications { get; set; }
+        public CaseStatusType NewSubmissionStatus { get; set; }
+        public String NewComment { get; set; }
+        public bool HasChanges { get; set; }
+        public bool IsNew { get; set; }
+        public string SelectedTab { get; set; }
+        public bool IsSaved { get; set; }
+        public bool IsSourceSst { get; set; }
+
+        public string ReturnUrl { get; set; }
+
+        public string TCIS { get; set; }
+        public Guid? RiskLevelId { get; set; }
+        public Guid? Duration { get; set; }
+        public string Vacancy { get; set; }
+        public string Site { get; set; }
+        public string Position { get; set; }
+        public bool IsFullTime { get; set; }
+        //Question Section
+        [DisplayName("Business POC Email:")]
+        public string BusinessPocEmail { get; set; }
+
+        public string SSN { get; set; }
+
+        public string PsefCommentBox { get; set; }
+
+        public string ElectronicSignature { get; set; }
+
+        public DateTime WaiverSignatureDate { get; set; }
+
+        public Boolean HasHeldSecurityClearance { get; set; }
+
+        public Boolean PSEF_ClearancesandAccessYN { get; set; }
+
+        public Boolean PSEF_List_Sponsor_Govt_AgenciesYN { get; set; }
+
+        public Boolean PSEF_TypeBackgroundInvestigationYN { get; set; }
+
+        public Boolean PSEF_ProvideDateofInvestigationYN { get; set; }
+
+        public Boolean PSEF_Details_Polygraph_ExaminationYN { get; set; }
+
+        public Boolean PSEF_Polygraph_DeatilsYN { get; set; }
+
+        public Boolean PSEF_NaturalizationYN { get; set; }
+
+        public Boolean PSEF_NotBriefed_Indoctrinated_CheckYN { get; set; }
+
+        public Boolean PSEF_ActiveClearancePast24moYN { get; set; }//new
+
+        public Boolean PSEF_PolygraphAcceptanceYN { get; set; }//new
+
+        public Boolean PSEF_PolygraphDetailsYN { get; set; }//new
+
+        public Boolean PSEF_CurrentUSCitizenYN { get; set; }//new
+
+        public Boolean BilletClearanceJustificationYN { get; set; }//new
+
+        public Boolean ClearanceJustificationYN { get; set; }//new
+
+        public Boolean PSEF_Naturalization { get; set; }
+
+        [DisplayName("Please provide issue date of naturalization certificate, court, and country of prior citizenship:")]
+        public string NaturalizationDetailsLabel { get; set; }
+
+        public Boolean PSEF_NON_US_Citizen_HouseYN { get; set; }
+
+        [DisplayName("Please provide issue date of naturalization certificate, court, and country of prior citizenship:")]
+        public string PSEF_NON_US_Citizen_HouseLabel { get; set; }
+
+        public Boolean PSEF_FailedToPayTax { get; set; }
+
+        public Boolean PSEF_Judgment { get; set; }
+
+        public Boolean PSEF_WagesAttached { get; set; }
+
+        public Boolean PSEF_EvictedForNonPayment { get; set; }
+
+        public Boolean PSEF_Over90daysDelinquent { get; set; }
+
+        public Boolean PSEF_BeenFired { get; set; }
+
+        public Boolean PSEF_PermittedToResign { get; set; }
+
+        public Boolean PSEF_LeftFollowingAllegationsOfMisconduct { get; set; }
+
+        public Boolean PSEF_LeftFollowingAllegationsOfUnsatisfactoryPerf { get; set; }
+
+        public Boolean PSEF_LeftUnderUnfavorableCircumstances { get; set; }
+
+        public Boolean PSEF_ChargedOrConvictedFelony { get; set; }
+
+        public Boolean PSEF_ChargedOrConvictedFirearmsExplosives { get; set; }
+
+        public Boolean PSEF_CriminalChargesPending { get; set; }
+
+        public Boolean PSEF_ChargedORConvictedDrugsAlcohol { get; set; }
+
+        public Boolean PSEF_SubjectToCourtMartial { get; set; }
+
+        public Boolean PSEF_ChargedConvictedOffensesNotListed { get; set; }
+
+        public Boolean PSEF_IllegallyUsedSubstances { get; set; }
+
+        public Boolean PSEF_SecurityClearanceDenied { get; set; }
+
+        public Boolean PSEF_RequestForSecurityClearanceWithdrawn { get; set; }
+
+        public Boolean PSEF_PublicRecordCivilCourtAction { get; set; }
+
+        public Boolean PSEF_LessThanHonorableDischarge { get; set; }
+
+        public Boolean FinalAcceptanceCheckbox { get; set; }
+
+        public string Controller { get; set; }
+        public string ResultColor { get; set; }
+
+        public int CurrentWizrardPanel { get; set; }
+
+        public CasePlusDTO CaseInfo { get; set; }
+
+        [DisplayName("Date/Time Submitted")]
+        public DateTime? DateSubmitted { get; set; }
+
+        public ValidationResultDTO ValidationInfo { get; set; }
+        public List<ChecklistDTO> ChecklistItems { get; internal set; }
+        public List<ChecklistHistoryDTO> CompletedChecklistItems { get; internal set; }
+    }
+}

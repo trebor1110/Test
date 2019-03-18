@@ -1,0 +1,631 @@
+@model WorkflowWeb.Models.SubmissionEdit
+
+@using DataContracts
+@using WorkflowWeb.Utilities.Attributse
+@using WorkflowWeb.Controllers
+@using Toggle
+@using Telerik.Web.Mvc.UI
+@using SharedUtilities.Strings
+
+@{
+    var disable = (ViewData["Disable"] == null) ? false : (bool)ViewData["Disable"];
+    var empty = MvcHtmlString.Create("");
+    var isNewSubmission = (Model.Documents == null);
+    var selectNone = new SelectListItem { Text = "" };
+
+    var investTypeList = ViewData["investTypeList"] as SelectList ?? new SelectList(null);
+    var polyTypeList = ViewData["polyTypeList"] as SelectList ?? new SelectList(null);
+    var polySponsorAgencyList = ViewData["polySponsorAgencyList"] as SelectList ?? new SelectList(null);
+    var polySponsorTier1List = ViewData["polySponsorTier1List"] as SelectList ?? new SelectList(null);
+    var requestedClearanceList = ViewData["requestedClearanceList"] as SelectList ?? new SelectList(null);
+    var currentAccessList = ViewData["currentAccessList"] as SelectList ?? new SelectList(null);
+    var eligibilityList = ViewData["eligibilityList"] as SelectList ?? new SelectList(null);
+    var programList = ViewData["programList"] as SelectList ?? new SelectList(null);
+    var governmentSystemList = ViewData["governmentSystemList"] as SelectList ?? new SelectList(null);
+
+    var agencyProgramList = ViewData["AgencyProgramList"] as PreScreeningInternalController.AgencyWorkflowColor;
+    var secAgencyList = ViewData["secAgencyList"] as SelectList ?? new SelectList(null);
+    var programkeys = ViewData["programKeys"] as SelectList ?? new SelectList(null);
+    var programcountries = ViewData["countries"] as SelectList ?? new SelectList(null);
+    var programstates = ViewData["states"] as SelectList ?? new SelectList(null);
+    var hasAdministratorRole = (ViewData["hasAdministratorRole"] as bool?).GetValueOrDefault(false);
+    var hasValidatorRole = (ViewData["hasValidatorRole"] as bool?).GetValueOrDefault(false);
+    var hasManagerRole = (ViewData["hasManagerRole"] as bool?).GetValueOrDefault(false);
+    bool isnew = Model.WorkflowHistory.LastOrDefault() == null || Model.CaseDTO.Status == CaseStatusType.Pending;
+    var httpContext = Request.RequestContext.HttpContext;
+    var hasSstRoles = WorkflowWeb.Utilities.PSEService.HasRole(pseAuthorizeAttribute.SSTRoles);
+    var isFromOnboarding = !string.IsNullOrEmpty(Model.CaseDTO.RequisitionId);
+}
+
+@Html.HiddenFor(m => m.CaseDTO.CaseSubmitterName)
+@Html.HiddenFor(m => m.CaseDTO.CaseSubmitterEmail)
+@Html.HiddenFor(m => m.CaseDTO.CaseSubmitterPhone)
+@Html.HiddenFor(m => m.CaseDTO.CaseSubmitter)
+
+@Html.HiddenFor(s => s.CaseDTO.SubmitterName)
+@Html.HiddenFor(s => s.CaseDTO.SubmitterEmployeeId)
+@Html.HiddenFor(s => s.CaseDTO.SubmitterEmail)
+@Html.HiddenFor(s => s.CaseDTO.SubmitterPhone)
+
+@Html.HiddenFor(m => m.PreScreenDTO.Id)
+@Html.HiddenFor(s => s.PreScreenDTO.SubmissionId)
+@Html.HiddenFor(s => s.PreScreenDTO.ContactId)
+
+@Html.HiddenFor(s => s.CaseDTO.AssignedTo)
+@Html.HiddenFor(s => s.CaseDTO.AssignedToName)
+
+@if (Model.SciRequisitionDTO != null)
+{
+    @Html.HiddenFor(m => m.SciRequisitionDTO.DodSciTierOneId)
+}
+
+<table onload="loadTest()">
+    <tr>
+        <th colspan="2" class="t-header" style="text-align: center">@Html.Label("Applicant Information")</th>
+    </tr>
+    <tr>
+        <td colspan="2" style="border: 1px solid black;">
+            <table>
+                <tr>
+                    <td>Name: </td>
+                    <td id="submittername">@Html.DisplayTextFor(m => m.CaseDTO.SubmitterName)</td>
+                </tr>
+                <tr>
+                    <td>Email: </td>
+                    <td>@Html.DisplayTextFor(m => m.CaseDTO.SubmitterEmail)</td>
+                </tr>
+                <tr>
+                    <td>Phone: </td>
+                    <td>@Html.DisplayTextFor(m => m.CaseDTO.SubmitterPhone)</td>
+                </tr>
+                @if (isFromOnboarding)
+                {
+                <tr>
+                    <td>Candidate ID:</td>
+                    <td>@Html.DisplayTextFor(m => m.CaseDTO.CandidateId)</td>
+                </tr>
+                <tr>
+                    <td>SSN:</td>
+                    <td>@Html.DisplayTextFor(m => m.CaseDTO.SubmitterSsn)</td>
+                </tr>
+                }
+                <tr>
+                    <td>EmployeeID:</td>
+                    <td> @Html.DisplayTextFor(m => m.CaseDTO.SubmitterEmployeeId) </td>
+                </tr>
+                <tr>
+                    <td>@Html.ValidationMessageFor(m => m.CaseDTO.Submitter)</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <th colspan="2" class="t-header" style="text-align: center">@Html.Label("Pre-Screening Form")</th>
+    </tr>
+    @foreach (var prescreenModel in Model.MultiPreScreenDTO)
+    {
+        <tr>
+            <td colspan="2" style="border: 1px solid black;">
+                <table>
+                    <tr>
+                        <td>Requested Clearance Level</td>
+                        <td>@Html.DropDownListFor(m => prescreenModel.RequestedClearanceId, requestedClearanceList, disable ? (object)new { disabled = "disabled" } : new { onchange = "OnChangeClearanceLevel()", value = requestedClearanceList.SelectedValue, @style = "width:350px; overflow:hidden;" })</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">@Html.ValidationMessageFor(m => prescreenModel.RequestedClearanceId)</td>
+                    </tr>
+                    <tr>
+                        <td>Requested Agency</td>
+                        <td><select id="ddlAgency" name="ddlAgency" style="width: 250px" onchange="OnChangeAgency(this.value)"></select></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">@Html.ValidationMessageFor(m => m.CaseDTO.SubmittedAgencyID)</td>
+                    </tr>
+                    <tr>
+                        <td>Component: </td>
+                        <td>@Html.TextBoxFor(m => prescreenModel.Component, disable ? (object)new { disabled = "disabled" } : new { style = "width:100%", maxlength = "10" })</td>
+                    </tr>
+                    <tr id="WorkflowType">
+                        <td>Workflow Type:</td>
+                        <td><select id="ddlWorkflowType" name="ddlWorkflowType" style="width: 250px" onchange="OnChangeWorkflowType(this.value)"></select></td>
+                    </tr>
+                    <tr>
+                        <td>Processing Timeline: </td>
+                        <td>
+                            @Html.DropDownList("PreScreenDTO.ResultColor2", new List<SelectListItem>
+                            {
+                                new SelectListItem {Text = "Select", Value = string.Empty, Selected = string.Equals("", Model.PreScreenDTO.ResultColor2, StringComparison.OrdinalIgnoreCase)},
+                                new SelectListItem {Text = PrescreenResult.SignificantlyDelayed, Value = PrescreenResult.SignificantlyDelayed, Selected = string.Equals(PrescreenResult.SignificantlyDelayed, Model.PreScreenDTO.ResultColor2, StringComparison.OrdinalIgnoreCase)},
+                                new SelectListItem {Text = PrescreenResult.Delayed, Value = PrescreenResult.Delayed, Selected = string.Equals(PrescreenResult.Delayed, Model.PreScreenDTO.ResultColor2, StringComparison.OrdinalIgnoreCase)},
+                                new SelectListItem {Text = PrescreenResult.Normal, Value = PrescreenResult.Normal, Selected = string.Equals(PrescreenResult.Normal, Model.PreScreenDTO.ResultColor2, StringComparison.OrdinalIgnoreCase)},
+                            }, new { onchange = "resultColorChanged()" })
+                        </td>
+                    </tr>
+                    @if (hasSstRoles && !isnew)
+                    {
+                        <tr>
+                            <td>Previous Investigation Type</td>
+                            <td>@Html.DropDownListFor(m => prescreenModel.PreviousInvestigationType, investTypeList, new { onchange = "investigationTypeChanged()" })</td>
+                        </tr>
+                        <tr id="PreviousInvestigationDateRow">
+                            <td>Previous Investigation Date</td>
+                            <td>@Html.Telerik().DatePickerFor(m => prescreenModel.PreviousInvestigationDate)</td>
+                        </tr>
+                        <tr>
+                            <td>Eligibility</td>
+                            <td>@Html.DropDownListFor(m => prescreenModel.Elgibility, eligibilityList, new { onchange = "eligibilityChanged()" })</td>
+                        </tr>
+                        <tr id="ElgibilityDateRow">
+                            <td>Eligibility Date</td>
+                            <td>@Html.Telerik().DatePickerFor(m => prescreenModel.ElgibilityDate)</td>
+                        </tr>
+                        <tr>
+                            <td>Current Access</td>
+                            <td>@Html.DropDownListFor(m =>prescreenModel.CurrentAccess, currentAccessList)</td>
+                        </tr>
+                        <tr>
+                            <td>Poly</td>
+                            <td>
+                                @Html.DropDownList("PreScreenDTO.Poly", new List<SelectListItem>
+                                {
+                                    new SelectListItem{Text = "----- SELECT -----", Selected = Model.PreScreenDTO.Poly == null, Value = ""}
+                                    , new SelectListItem{Text = "Yes", Value = "True", Selected = Model.PreScreenDTO.Poly == true}
+                                    , new SelectListItem{Text="No", Value = "False", Selected = Model.PreScreenDTO.Poly == false}
+                                }, disable ? new { disabled = "disabled", onchange = "polyChanged()" } : (object)new { onchange = "polyChanged()" })
+                            </td>
+                        </tr>
+                        <tr id="PolyTypeRow">
+                            <td>Poly Type</td>
+                            <td>@Html.DropDownListFor(m => prescreenModel.PolyType, polyTypeList, disable ? new { disabled = "disabled" } : new object())</td>
+                        </tr>
+                        <tr id="PolySponsorRow">
+                            <td>Poly Sponsor Agency</td>
+                            <td>@Html.DropDownListFor(m => prescreenModel.PolySponsorAgency, polySponsorAgencyList, disable ? (object)new { disabled = "disabled" } : new { OnChange = "showHidePolySponsorTierOne()", @style = "width:350px; overflow:hidden;" }) </td>
+                        </tr>
+                        <tr id="rowPolySponsorTierOne" style="display: none">
+                            <td>Poly Sponsor Tier1</td>
+                            <td>@Html.DropDownListFor(m => prescreenModel.PolySponsorTier1, polySponsorTier1List, disable ? new { disabled = "disabled" } : new object())</td>
+                        </tr>
+                        <tr>
+                            <td>Government System Checked</td>
+                            <td>
+                                @Html.DropDownListFor(m => prescreenModel.GovernmentSystemID, governmentSystemList, disable ? new { disabled = "disabled" } : new object())
+                            </td>
+                        </tr>
+                        if (FeatureService.Instance.IsEnabled(SharedUtilities.Guids.Facet.Prescreen_Contract))
+                        {
+                            <tr>
+                                <td>Contract Name  <input type="submit" name="SelectContract" value="Change Contract" onclick="document.getElementById('darkLayer').style.display = '';" /></td>
+                                <td>@Html.DisplayTextFor(m => m.CaseDTO.SecurityContractName)</td>
+                            </tr>
+                            <tr>
+                                <td>Contract Number</td>
+                                <td>@Html.DisplayTextFor(m => m.CaseDTO.SecurityContractNumber)</td>
+                            </tr>
+                        }
+                        if (FeatureService.Instance.IsEnabled(SharedUtilities.Guids.Facet.Prescreen_ClearanceVerified))
+                        {
+                            <tr>
+                                <td>Clearance Verified</td>
+                                <td>@Html.Telerik().DatePickerFor(m => m.CaseDTO.ClearanceVerified) </td>
+                            </tr>
+                        }
+                        if (FeatureService.Instance.IsEnabled(SharedUtilities.Guids.Facet.EnableProcessingTimelineOnPrescreens))
+                        {
+                            <tr>
+                                <td style="horiz-align: center">Processing Timeline Grid</td>
+                            </tr>               
+                            <tr>
+                                <td colspan="2">
+                                    <table border="1">
+                                        @{
+                                        <tr>
+                                            @foreach (var agency in agencyProgramList.AgencyList)
+                                            {
+                                                <td>@agency.AgencyName</td>
+                                            }
+                                         </tr>
+                                        <tr>
+                                            @for (int j = 0; j < agencyProgramList.AgencyList.Count; j++)
+                                            {
+                                                var item = agencyProgramList.Results[j];
+                                                bool tempDisable = !item.IsShown;
+                                                <td>
+                                                    @if (item.IsShown)
+                                                    {
+                                                        @Html.DropDownList("PreScreenDTO.ResultColor", new List<SelectListItem>
+                                                        {
+                                                            new SelectListItem {Text = "Select", Value = string.Empty, Selected = string.Equals("", item.Color, StringComparison.CurrentCultureIgnoreCase)},
+                                                            new SelectListItem {Text = PrescreenResult.SignificantlyDelayed, Value = PrescreenResult.SignificantlyDelayed, Selected = string.Equals(PrescreenResult.SignificantlyDelayed,item.Color, StringComparison.OrdinalIgnoreCase)},
+                                                            new SelectListItem {Text = PrescreenResult.Delayed, Value = PrescreenResult.Delayed, Selected = string.Equals(PrescreenResult.Delayed, item.Color, StringComparison.OrdinalIgnoreCase)},
+                                                            new SelectListItem {Text = PrescreenResult.Normal, Value = PrescreenResult.Normal, Selected = string.Equals(PrescreenResult.Normal, item.Color, StringComparison.OrdinalIgnoreCase)},
+                                                        }, tempDisable ? (object)new { disabled = "disabled", agencyId = item.AgencyId } : new { onload = "SetDropDownListBackgroundColors()", agencyId = item.AgencyId, onchange = "resultColorListChanged()" })
+                                                    }
+                                                </td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @for (int j = 0; j < agencyProgramList.AgencyList.Count; j++)
+                                            {
+
+                                                var item = agencyProgramList.Results[j];
+                                                var agency = agencyProgramList.AgencyList[j];
+
+                                                List<SelectListItem> currentKeys = new List<SelectListItem>();
+
+                                                if (agency.AgencyName == "DOS" && this.Model.CaseDTO.SubmittedClearanceLevelID.ToString() == "44880446-adae-4fe4-b3c0-8143ec989e4b")
+                                                {
+                                                    currentKeys = programkeys.Where(x => x.Text == "VSS_MRPT PR" || x.Text == "GLSO-MRPT PR" || x.Text == "GLSO-MRPT" || x.Text == "GLSO-MRPT Reinstatement" || x.Text == "VSS-MRPT" || x.Text == "VSS-MRPT Reinstatement" || x.Text == "Public Trust").ToList();
+                                                }
+                                                else if (agency.AgencyName == "USCIS" && this.Model.CaseDTO.SubmittedClearanceLevelID.ToString() == "44880446-adae-4fe4-b3c0-8143ec989e4b")
+                                                {
+                                                    currentKeys = programkeys.Where(x => x.Text == "Contract Transfer" || x.Text == "Job Transfer" || x.Text == "Site Transfer" || x.Text == "Initial MRPT" || x.Text == "Upgrade MRPT" || x.Text == "Public Trust").ToList();
+                                                }
+                                                else if (agency.AgencyName == "DOJ" && this.Model.CaseDTO.SubmittedClearanceLevelID.ToString() == "44880446-adae-4fe4-b3c0-8143ec989e4b")
+                                                {
+                                                    currentKeys = programkeys.Where(x => x.Text == "Civil Rights" || x.Text == "EOUSA" || x.Text == "ENRD" || x.Text == "SEC CLS" || x.Text == "Public Trust" || x.Text == "Civil" || x.Text == "EOIR" || x.Text == "Criminal").ToList();
+                                                }
+                                                else if (agency.AgencyName.Equals("NSA", StringComparison.CurrentCultureIgnoreCase))
+                                                {
+                                                    currentKeys = programkeys.Where(x => x.Text == "Single Track" || x.Text == "Dual Track" || x.Text == "Conditional Certification of Access" || x.Text == "NSA Reinstatement" || x.Text == "N/A").ToList();
+                                                }
+                                                else
+                                                {
+                                                    if (agency.AgencyName.Equals("DOD", StringComparison.CurrentCultureIgnoreCase) || agency.AgencyName.Equals("DOD/Other", StringComparison.CurrentCultureIgnoreCase))
+                                                    {
+                                                        currentKeys.AddRange(programkeys.Where(x => x.Text == "Initial" || x.Text == "Upgrade" || x.Text == "Reinstatement").ToList());
+                                                    }
+                                                    currentKeys.AddRange(programkeys.Where(x => x.Text == "Initial-SCI" || x.Text == "Upgrade-SCI" || x.Text == "Crossover" || x.Text == "N/A").ToList());
+                                                }
+
+                                                currentKeys = currentKeys.OrderBy(x => x.Text).ToList();
+                                                currentKeys.Insert(0, new SelectListItem { Text = "-Select-", Value = "00000000-0000-0000-0000-000000000000" });
+                                                var selected = currentKeys.FirstOrDefault(x => x.Value == item.ProgramId.ToString());
+                                                if (selected != null)
+                                                {
+                                                    selected.Selected = true;
+                                                }
+                                                <td>@Html.DropDownList("PreScreenDTO.ResultColorProgram", currentKeys, disable ? (object)new { disabled = "disabled", data_agency = agency.AgencyCode } : (object)new { data_agency = agency.AgencyCode })</td>
+                                            }
+                                        </tr>
+                                        }
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <td>Follow Up Required</td>
+                            <td>@Html.CheckBoxFor(m => prescreenModel.FollowUpRequired) </td>
+                        </tr>
+                        <tr>
+                            <td>Remarks</td>
+                            <td>@Html.TextAreaFor(m => prescreenModel.Remarks, disable ? (object)new { disabled = "disabled" } : new { maxlength = "600" })</td>
+                        </tr>
+                    }            
+                    <tr>
+                        <td>Estimated Internal Cycle Time In Days:</td>
+                        <td><input id="txtInternalCycleTime" name="txtInternalCycleTime" type="text" /></td>
+                    </tr>
+                    <tr>
+                        <td>Estimated External Cycle Time In Days:</td>
+                        <td><input id="txtExternalCycleTime" name="txtExternalCycleTime" type="text" /></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    }
+</table>
+<script type="text/javascript">
+    $(document).ready(function () {
+        OnChangeClearanceLevel(true);
+        $('#ddlAgency').val($('#CaseDTO_SubmittedAgencyID').val());
+        OnChangeAgency($('#CaseDTO_SubmittedAgencyID').val(), true);
+        showHidePolySponsorTierOne();
+        investigationTypeChanged();
+        eligibilityChanged();
+        polyChanged();
+        resultColorListChanged();
+    });
+
+    function confirmDialog() {
+        var submittername = document.getElementById('submittername');
+        if (submittername.innerHTML == "") {
+            return true;
+        } else {
+            if (confirm("Are you sure you want to select a new employee?")) {
+                return true;
+            } else {
+                document.getElementById('darkLayer').style.display = 'none';
+                return false;
+            }
+        }
+    }
+
+    function OnChangeClearanceLevel(fromReady) {
+        GetAgencyList();
+        GetWorkflowTypeList($("#CaseDTO_SubmittedAgencyID").val());
+        var isPt = $("#CaseDTO_SubmittedClearanceLevelID").val() === '44880446-adae-4fe4-b3c0-8143ec989e4b';
+        var agencies = ['c4bc2641-653e-43b3-8710-4d8b8073991a', '5be62fd0-85db-4abf-ad3b-5cbaf8cfab9f', '41234afe-5c61-4507-84ce-cf2a5942bedc'];
+        if (!fromReady && isPt) {
+            loadPublicTrustProcessingTimelineGrid(agencies);
+        }
+        else if (!fromReady) {
+            loadNonPublicTrustProcessingTimelineGrid(agencies);
+        }
+        return true;
+    }
+
+    function loadPublicTrustProcessingTimelineGrid(agencies) {
+        for (var i = 0; i < agencies.length; i++) {
+            var agency = agencies[i];
+            var site = GetUrlSite();
+            var urlAgencies = '/' + site + '/' + 'PreScreeningInternal' + '/GetWorkflowTypesForClearance';
+            var params = {
+                "clearanceTypeId": '44880446-adae-4fe4-b3c0-8143ec989e4b',
+                "agencyId": agency
+            };
+            var successful = false;
+            $.ajaxSetup({
+                async: false
+            });
+
+            $.post(urlAgencies, params)
+                .success(function(workflowTypes) {
+                    var markup = "";
+                    for (var x = 0; x < workflowTypes.length; x++) {
+                        markup += "<option value=" + workflowTypes[x].Value + ">" + workflowTypes[x].Text + "</option>";
+                    }
+                    markup += "<option value='a7a72853-0a84-4db4-8d05-8bad6bb8829a'>N/A</option>";
+                    markup = markup.replace('-- Select Workflow Type --', '-Select-');
+                    var selector = '*[data-agency="' + agency + '"]';
+                    var val = $(selector);
+                    val.html(markup).show();
+                })
+                .fail(function(response) {
+                    HideShowControl($('#darkLayer'), true);
+                    var json = $.parseJSON(response.responseText);
+                    alert(json.errorMessage);
+                    successful = false;
+                });
+
+
+        }
+
+    }
+
+    function loadNonPublicTrustProcessingTimelineGrid(agencies) {
+        // template one to use to set back to original
+        var htmlDropdown = $('*[data-agency="16d99789-9c03-4ff1-b3e0-50d1292ab48f"]').html(); 
+        for (var i = 0; i < agencies.length; i++) {
+            var selector = '*[data-agency="' + agencies[i] + '"]';
+            var val = $(selector); 
+            val.html(htmlDropdown).show();
+        }
+    }
+
+    function GetAgencyList() {
+        var site = GetUrlSite();
+        var urlAgencies = '/' + site + '/' + 'PreScreeningInternal' + '/GetAgenciesForClearanceType';
+        var params = {
+            "clearanceTypeId": $("#CaseDTO_SubmittedClearanceLevelID").val()
+        };
+        var successful = false;
+        $.ajaxSetup({
+            async: false
+        });
+
+        $.post(urlAgencies, params, function (data) {
+        })
+        .success(function (agencies) {
+            var markup = "";
+            for (var x = 0; x < agencies.length; x++) {
+                markup += "<option value=" + agencies[x].Value + ">" + agencies[x].Text + "</option>";
+            }
+            $("#ddlAgency").html(markup).show();
+            successful = true;
+        })
+        .fail(function (response) {
+            HideShowControl($('#darkLayer'), true);
+            var json = $.parseJSON(response.responseText);
+            alert(json.errorMessage);
+            successful = false;
+        });
+
+        //Set Agency DDL after refresh in case this is due to a return from a postback.
+        $('#ddlAgency').val($('#CaseDTO_SubmittedAgencyID').val());
+        return successful;
+    }
+
+
+    function GetWorkflowTypeList(agencyId) {
+        var site = GetUrlSite();
+        var urlAgencies = '/' + site + '/' + 'PreScreeningInternal' + '/GetWorkflowTypesForClearance';
+        var params = {
+            "clearanceTypeId": $("#CaseDTO_SubmittedClearanceLevelID").val(),
+            "agencyId": agencyId
+        };
+        var successful = false;
+        $.ajaxSetup({
+            async: false
+        });
+        $.post(urlAgencies, params, function (data) {})
+        .success(function (workflowTypes) {
+            var markup = "";
+            for (var x = 0; x < workflowTypes.length; x++) {
+                markup += "<option value=" + workflowTypes[x].Value + ">" + workflowTypes[x].Text + "</option>";
+            }
+            $("#ddlWorkflowType").html(markup).show();
+            successful = true;
+            })
+            .fail(function (response) {
+                HideShowControl($('#darkLayer'), true);
+                var json = $.parseJSON(response.responseText);
+                alert(json.errorMessage);
+                successful = false;
+            });
+            //Set Workflow Type DDL after refresh in case this is due to a return from a postback.
+            $('#ddlWorkflowType').val($('#PreScreenDTO_ProgramId').val());
+            return successful;
+        }
+
+        function OnChangeWorkflowType(workflow) {
+            $('#PreScreenDTO_ProgramId').val(workflow);
+            OnChangeCycleTime();
+
+            // keeps the workflow type and corresponding agency  in sync with the item
+            // in the processing timeline
+            var agencyId = $("#ddlAgency").val();
+            var selector = '*[data-agency="' + agencyId + '"]';
+            var ddl = $(selector);
+            ddl.val(workflow);
+
+        }
+
+        function GetUrlSite() {
+            var urlCurrent = window.location.pathname.split("/");
+            var site = urlCurrent[1];
+            return site;
+        }
+
+        function SetDropDownListBackgroundColors() {
+            var items = $('#PreScreenDTO_ResultColor option');
+            $.each(items, function (index, value) {
+                value.style.background = value.value;
+            });
+        }
+        SetDropDownListBackgroundColors();
+
+        function OnChangeAgency(agencyId) {
+            GetWorkflowTypeList(agencyId);
+            $('#CaseDTO_SubmittedAgencyID').val(agencyId);
+            OnChangeCycleTime();
+            $("select[name='PreScreenDTO.ResultColor']").attr("readonly", false);
+            var resultColor = $("#ddlAgency").val();
+            var ddlToUpdate = $("select[name='PreScreenDTO.ResultColor'][agencyId='" + resultColor + "']");
+            if (!ddlToUpdate.length) {
+                ddlToUpdate = $("select[name='PreScreenDTO.ResultColor'][agencyId='2fa055a0-1d8c-4c55-bafa-3033cb9f6926']");
+            }
+            ddlToUpdate.attr("readonly", true);
+        }
+
+        function OnChangeCycleTime() {
+            ChangeCycleTime(true);
+            ChangeCycleTime(false);
+        }
+
+        function ChangeCycleTime(isInternal) {
+            var programId = $('#PreScreenDTO_ProgramId').val();
+            var agencyId = $("#CaseDTO_SubmittedAgencyID").val();
+            var color = $("#PreScreenDTO_ResultColor2").val();
+
+            var site = GetUrlSite();
+            var urlCycle = '@Url.Action("GetAverageCycleTime", "PreScreeningInternal")';
+            var params = {
+                "programId": programId,
+                "agencyId": agencyId,
+                "color": color,
+                "isInternal": isInternal
+            };
+            var successful;
+            $.ajaxSetup({
+                async: false
+            });
+            $.post(urlCycle, params, function (data) {
+            })
+            .success(function (averageCycleTime) {
+                if (isInternal) {
+                    $("#txtInternalCycleTime").val(averageCycleTime);
+                } else {
+                    $("#txtExternalCycleTime").val(averageCycleTime);
+                }
+                successful = true;
+            })
+            .fail(function (response) {
+                HideShowControl($('#darkLayer'), true);
+                var json = $.parseJSON(response.responseText);
+                alert(json.errorMessage);
+                successful = false;
+            });
+        }
+
+        // Poly Sponsor Agency
+        function HideShowControl(ctl, condition) {
+            if (condition) {
+                ctl.hide();
+                return true;
+            } else {
+                ctl.show();
+                return false;
+            }
+        }
+
+        function showHidePolySponsorTierOne() {
+            var agency = $('#PreScreenDTO_PolySponsorAgency option:selected').text();
+            if (agency !== 'DOD SCI') {
+                $('#PreScreenDTO_PolySponsorTier1').val(0);
+            }
+            HideShowControl($('#rowPolySponsorTierOne'), agency !== 'DOD SCI');
+        }
+
+        function validateOnSave() {
+
+            var polySponsorAgency = $('#PreScreenDTO_PolySponsorAgency option:selected').text();
+            var polySponsorAgencyVal = $('#PreScreenDTO_PolySponsorAgency option:selected').val();
+
+            if (polySponsorAgencyVal == '00000000-0000-0000-0000-000000000000') {
+                alert('Before you can proceed you must select an poly sponsoring agency');
+                return false;
+            } else {
+                if (polySponsorAgency.toLowerCase() === "dod sci") {
+                    var tierOneVal = $("select[id='PreScreenDTO_PolySponsorTier1'] option:selected").val();
+                    if (tierOneVal === 0) {
+                        alert('You have selected DOD SCI as the poly sponsoring agency. You must select a Tier One');
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        function investigationTypeChanged() {
+            if ($("#PreScreenDTO_PreviousInvestigationType option:selected").text() == "Not Applicable" || $("#PreScreenDTO_PreviousInvestigationType option:selected").text() == " -- Select Investigation Type -- ") {
+                $("#PreviousInvestigationDateRow").hide();
+            } else {
+                $("#PreviousInvestigationDateRow").show();
+            }
+        }
+
+        function eligibilityChanged() {
+            if ($("#PreScreenDTO_Elgibility option:selected").text() == "None" || $("#PreScreenDTO_Elgibility option:selected").text() == " -- Select Status Type -- ") {
+                $("#ElgibilityDateRow").hide();
+            } else {
+                $("#ElgibilityDateRow").show();
+            }
+        }
+
+        function polyChanged() {
+            if ($("#PreScreenDTO_Poly option:selected").text() == "No" || $("#PreScreenDTO_Poly option:selected").text() == "----- SELECT -----") {
+                $("#PolyTypeRow").hide();
+                $("#PolySponsorRow").hide();
+            } else {
+                $("#PolyTypeRow").show();
+                $("#PolySponsorRow").show();
+            }
+        }
+        function resultColorChanged() {
+            var resultColor = $("#PreScreenDTO_ResultColor2 option:selected").val();
+            var agencyId = $("#ddlAgency").val();
+            var ddlToUpdate = $("select[name='PreScreenDTO.ResultColor'][agencyId='" + agencyId + "'");
+            if (!ddlToUpdate.length) {
+                ddlToUpdate = $("select[name='PreScreenDTO.ResultColor'][agencyId='2fa055a0-1d8c-4c55-bafa-3033cb9f6926'");
+            }
+            ddlToUpdate.val(resultColor);
+        }
+        function resultColorListChanged() {
+            var agencyId = $("#ddlAgency").val();
+            var ddlToUpdate = $("select[name='PreScreenDTO.ResultColor'][agencyId='" + agencyId + "'");
+            if (!ddlToUpdate.length) {
+                ddlToUpdate = $("select[name='PreScreenDTO.ResultColor'][agencyId='2fa055a0-1d8c-4c55-bafa-3033cb9f6926'");
+            }
+            $("#PreScreenDTO_ResultColor2").val(ddlToUpdate.val());
+        }
+</script>
